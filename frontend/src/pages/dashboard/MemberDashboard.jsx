@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { usersAPI } from '../../services/api';
+import { formatDate, getDaysUntilDue, formatCurrency, getErrorMessage } from '../../utils/helpers';
 import { GiSpellBook } from 'react-icons/gi';
-import { FaDollarSign, FaHourglass } from "react-icons/fa";
+import { FaDollarSign, FaHourglass } from 'react-icons/fa';
 import '../Dashboard.css';
 
 const MemberDashboard = () => {
@@ -12,43 +13,56 @@ const MemberDashboard = () => {
   const [myBooks, setMyBooks] = useState([]);
   const [fines, setFines] = useState({ fines: [], totalUnpaid: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboardData = async () => {
+      try {
+        const [statsRes, booksRes, finesRes] = await Promise.all([
+          usersAPI.getDashboardStats(),
+          usersAPI.getMyBooks(),
+          usersAPI.getFines(),
+        ]);
+
+        if (isMounted) {
+          setStats(statsRes.data);
+          setMyBooks(booksRes.data.transactions);
+          setFines(finesRes.data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(getErrorMessage(err));
+          console.error('Error loading dashboard:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     loadDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      const [statsRes, booksRes, finesRes] = await Promise.all([
-        usersAPI.getDashboardStats(),
-        usersAPI.getMyBooks(),
-        usersAPI.getFines(),
-      ]);
-
-      setStats(statsRes.data);
-      setMyBooks(booksRes.data.transactions);
-      setFines(finesRes.data);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const getDaysUntilDue = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="error-message">
+          <h3>Error loading dashboard</h3>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -133,12 +147,12 @@ const MemberDashboard = () => {
                     Fine issued: {formatDate(fine.created_at)}
                   </p>
                 </div>
-                <div className="fine-amount">${parseFloat(fine.amount).toFixed(2)}</div>
+                <div className="fine-amount">{formatCurrency(fine.amount)}</div>
               </div>
             ))}
           </div>
           <div className="fine-total">
-            <strong>Total Unpaid: ${fines.totalUnpaid}</strong>
+            <strong>Total Unpaid: {formatCurrency(fines.totalUnpaid)}</strong>
           </div>
         </div>
       )}
