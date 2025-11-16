@@ -1,13 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/api';
+import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
+import { safeJSONParse, safeJSONStringify } from '../../utils/helpers';
 
 // Load user from localStorage on init
 const loadUserFromStorage = () => {
   try {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
+    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+    const userData = safeJSONParse(LOCAL_STORAGE_KEYS.USER);
     if (token && userData) {
-      return JSON.parse(userData);
+      return userData;
     }
   } catch (error) {
     console.error('Error loading user from storage:', error);
@@ -23,8 +25,8 @@ export const loginUser = createAsyncThunk(
       const response = await authAPI.login({ email, password });
       const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, token);
+      safeJSONStringify(LOCAL_STORAGE_KEYS.USER, user);
       
       return user;
     } catch (error) {
@@ -40,8 +42,8 @@ export const registerUser = createAsyncThunk(
       const response = await authAPI.register(userData);
       const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.TOKEN, token);
+      safeJSONStringify(LOCAL_STORAGE_KEYS.USER, user);
       
       return user;
     } catch (error) {
@@ -59,8 +61,8 @@ const authSlice = createSlice({
   },
   reducers: {
     logout: (state) => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
       state.user = null;
       state.error = null;
     },
@@ -69,7 +71,7 @@ const authSlice = createSlice({
     },
     updateUserProfile: (state, action) => {
       state.user = { ...state.user, ...action.payload };
-      localStorage.setItem('user', JSON.stringify(state.user));
+      safeJSONStringify(LOCAL_STORAGE_KEYS.USER, state.user);
     },
   },
   extraReducers: (builder) => {

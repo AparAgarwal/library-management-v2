@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import AppRoutes from './routes';
@@ -23,7 +24,9 @@ function AppContent() {
       {showNavbar && <Navbar />}
       {isAdminLayout && <Sidebar user={user} />}
       <main className="main">
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </main>
     </div>
   );
@@ -31,9 +34,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AppContent />
+      </Router>
+    </ErrorBoundary>
   );
 }
 
