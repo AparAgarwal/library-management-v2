@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
+import { formatCurrency, getErrorMessage } from '../../utils/helpers';
 import { FaSearch, FaUser } from 'react-icons/fa';
 import './AdminMembers.css';
 
@@ -10,6 +11,7 @@ export default function AdminMembers() {
     const [members, setMembers] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const getAvatarUrl = (avatarUrl) => {
         if (avatarUrl) {
@@ -21,12 +23,16 @@ export default function AdminMembers() {
 
     const fetchMembers = React.useCallback(async (signal) => {
         setLoading(true);
+        setError(null);
         try {
             const res = await adminAPI.listMembers({ q: query, page, limit: 25, signal });
             setMembers(res.data.members);
             setTotalPages(res.data.pagination.totalPages || 1);
         } catch (err) {
-            if (err.name !== 'AbortError') console.error(err);
+            if (err.name !== 'AbortError') {
+                setError(getErrorMessage(err));
+                console.error(err);
+            }
         } finally {
             setLoading(false);
         }
@@ -66,7 +72,14 @@ export default function AdminMembers() {
 
             {loading && <div className="loading-spinner">Loading members...</div>}
 
-            {!loading && members.length === 0 && (
+            {!loading && error && (
+                <div className="error-message">
+                    <h3>Error loading members</h3>
+                    <p>{error}</p>
+                </div>
+            )}
+
+            {!loading && !error && members.length === 0 && (
                 <div className="empty-state">
                     <FaUser size={48} />
                     <p>No members found</p>
@@ -98,7 +111,7 @@ export default function AdminMembers() {
                             <div className="stat-item">
                                 <span className="stat-label">Unpaid Fines:</span>
                                 <span className={`stat-value ${m.total_unpaid_fines > 0 ? 'has-fines' : ''}`}>
-                                    ${parseFloat(m.total_unpaid_fines).toFixed(2)}
+                                    {formatCurrency(m.total_unpaid_fines)}
                                 </span>
                             </div>
                         </div>

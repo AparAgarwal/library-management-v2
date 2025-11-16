@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Link } from "react-router-dom";
 import { selectUser } from '../../store/slices/authSlice';
 import { circulationAPI } from '../../services/api';
+import { formatDate, getDaysUntilDue, getErrorMessage } from '../../utils/helpers';
 import { GiSpellBook, GiWhiteBook } from 'react-icons/gi';
 import { FaUserFriends, FaHourglass, FaSearch, FaFilter } from "react-icons/fa";
 import '../Dashboard.css';
@@ -16,6 +17,7 @@ const LibrarianDashboard = () => {
   const [checkoutForm, setCheckoutForm] = useState({ userId: '', bookItemId: '' });
   const [returnForm, setReturnForm] = useState({ bookItemId: '' });
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'overdue'
   const [sortBy, setSortBy] = useState('dueDate'); // 'dueDate', 'daysRemaining'
@@ -26,33 +28,37 @@ const LibrarianDashboard = () => {
   const filterDropdownRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboardData = async () => {
+      try {
+        const [statsRes, checkoutsRes] = await Promise.all([
+          circulationAPI.getStats(),
+          circulationAPI.getAllCheckouts(),
+        ]);
+
+        if (isMounted) {
+          setStats(statsRes.data);
+          setAllCheckouts(checkoutsRes.data.checkouts);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(getErrorMessage(err));
+          console.error('Error loading dashboard:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     loadDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      const [statsRes, checkoutsRes] = await Promise.all([
-        circulationAPI.getStats(),
-        circulationAPI.getAllCheckouts(),
-      ]);
-
-      setStats(statsRes.data);
-      setAllCheckouts(checkoutsRes.data.checkouts);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculate days remaining
-  const getDaysRemaining = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -98,7 +104,7 @@ const LibrarianDashboard = () => {
       });
     } else if (sortBy === 'daysRemaining') {
       filtered.sort((a, b) => {
-        const comparison = getDaysRemaining(a.due_date) - getDaysRemaining(b.due_date);
+        const comparison = getDaysUntilDue(a.due_date) - getDaysUntilDue(b.due_date);
         return sortOrder === 'asc' ? comparison : -comparison;
       });
     }
@@ -125,9 +131,16 @@ const LibrarianDashboard = () => {
       await circulationAPI.checkout(checkoutForm);
       setMessage({ text: 'Book checked out successfully!', type: 'success' });
       setCheckoutForm({ userId: '', bookItemId: '' });
-      loadDashboardData();
-    } catch (error) {
-      setMessage({ text: error.response?.data?.error || 'Checkout failed', type: 'error' });
+      
+      // Reload data
+      const [statsRes, checkoutsRes] = await Promise.all([
+        circulationAPI.getStats(),
+        circulationAPI.getAllCheckouts(),
+      ]);
+      setStats(statsRes.data);
+      setAllCheckouts(checkoutsRes.data.checkouts);
+    } catch (err) {
+      setMessage({ text: getErrorMessage(err), type: 'error' });
     }
   };
 
@@ -139,14 +152,17 @@ const LibrarianDashboard = () => {
       await circulationAPI.return(returnForm);
       setMessage({ text: 'Book returned successfully!', type: 'success' });
       setReturnForm({ bookItemId: '' });
-      loadDashboardData();
-    } catch (error) {
-      setMessage({ text: error.response?.data?.error || 'Return failed', type: 'error' });
+      
+      // Reload data
+      const [statsRes, checkoutsRes] = await Promise.all([
+        circulationAPI.getStats(),
+        circulationAPI.getAllCheckouts(),
+      ]);
+      setStats(statsRes.data);
+      setAllCheckouts(checkoutsRes.data.checkouts);
+    } catch (err) {
+      setMessage({ text: getErrorMessage(err), type: 'error' });
     }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   const isOverdue = (dueDate) => {
@@ -155,6 +171,17 @@ const LibrarianDashboard = () => {
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="error-message">
+          <h3>Error loading dashboard</h3>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -407,10 +434,10 @@ const LibrarianDashboard = () => {
                     <div><strong>Due:</strong> {formatDate(checkout.due_date)}</div>
                     <div className="days-remaining">
                       <strong>Days:</strong> 
-                      <span className={getDaysRemaining(checkout.due_date) < 0 ? 'overdue-days' : 'remaining-days'}>
-                        {getDaysRemaining(checkout.due_date) < 0 
-                          ? `${Math.abs(getDaysRemaining(checkout.due_date))} overdue` 
-                          : `${getDaysRemaining(checkout.due_date)} left`}
+                      <span className={getDaysUntilDue(checkout.due_date) < 0 ? 'overdue-days' : 'remaining-days'}>
+                        {getDaysUntilDue(checkout.due_date) < 0 
+                          ? `${Math.abs(getDaysUntilDue(checkout.due_date))} overdue` 
+                          : `${getDaysUntilDue(checkout.due_date)} left`}
                       </span>
                     </div>
                   </div>

@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { booksAPI, requestsAPI } from '../../services/api';
 import { selectUser } from '../../store/slices/authSlice';
+import { getErrorMessage } from '../../utils/helpers';
 import { GiWhiteBook } from 'react-icons/gi';
 import { FaBookmark } from 'react-icons/fa';
 import '../Books.css';
 
 const BookCatalog = () => {
   const user = useSelector(selectUser);
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [requestingBook, setRequestingBook] = useState(null);
@@ -20,12 +23,14 @@ const BookCatalog = () => {
 
   const loadBooks = React.useCallback(async (page) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await booksAPI.getAll(page, 12);
       setBooks(response.data.books);
       setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Error loading books:', error);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      console.error('Error loading books:', err);
     } finally {
       setLoading(false);
     }
@@ -98,9 +103,9 @@ const BookCatalog = () => {
       setTimeout(() => {
         setRequestMessage({ text: '', type: '', bookId: null });
       }, 3000);
-    } catch (error) {
+    } catch (err) {
       setRequestMessage({ 
-        text: error.response?.data?.error || 'Request failed', 
+        text: getErrorMessage(err), 
         type: 'error',
         bookId 
       });
@@ -138,7 +143,7 @@ const BookCatalog = () => {
                   onMouseDown={() => {
                     setSearchQuery(s.title);
                     setShowSuggestions(false);
-                    window.location.href = `/books/${s.book_id}`;
+                    navigate(`/books/${s.book_id}`);
                   }}
                 >
                   <strong>{s.title}</strong>
@@ -152,6 +157,14 @@ const BookCatalog = () => {
 
       {loading ? (
         <div className="loading">Loading books...</div>
+      ) : error ? (
+        <div className="error-message">
+          <h3>Error loading books</h3>
+          <p>{error}</p>
+          <button onClick={() => loadBooks(1)} className="retry-button">
+            Retry
+          </button>
+        </div>
       ) : books.length === 0 ? (
         <div className="empty-state">
           <p>No books found</p>
