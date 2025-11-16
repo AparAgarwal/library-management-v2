@@ -1,15 +1,34 @@
 -- Database Schema for Library Management System
 
--- Create ENUM types
-CREATE TYPE user_role AS ENUM ('MEMBER', 'LIBRARIAN');
-CREATE TYPE book_item_status AS ENUM ('AVAILABLE', 'CHECKED_OUT', 'RESERVED', 'LOST', 'DAMAGED');
-CREATE TYPE transaction_status AS ENUM ('ACTIVE', 'RETURNED', 'OVERDUE');
-CREATE TYPE reservation_status AS ENUM ('PENDING', 'FULFILLED', 'CANCELLED');
-
 -- Enable pgcrypto for secure password hashing (bcrypt via crypt())
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Create ENUM types (idempotent)
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('MEMBER', 'LIBRARIAN');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE book_item_status AS ENUM ('AVAILABLE', 'CHECKED_OUT', 'RESERVED', 'LOST', 'DAMAGED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE transaction_status AS ENUM ('ACTIVE', 'RETURNED', 'OVERDUE');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE reservation_status AS ENUM ('PENDING', 'FULFILLED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -18,12 +37,13 @@ CREATE TABLE users (
     role user_role DEFAULT 'MEMBER',
     phone VARCHAR(20),
     address TEXT,
+    avatar_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Books table (catalog information)
-CREATE TABLE books (
+CREATE TABLE IF NOT EXISTS books (
     book_id SERIAL PRIMARY KEY,
     isbn VARCHAR(13) UNIQUE,
     title VARCHAR(255) NOT NULL,
@@ -38,7 +58,7 @@ CREATE TABLE books (
 );
 
 -- Book Items table (physical copies)
-CREATE TABLE book_items (
+CREATE TABLE IF NOT EXISTS book_items (
     book_item_id SERIAL PRIMARY KEY,
     book_id INTEGER NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
     barcode VARCHAR(50) UNIQUE NOT NULL,
@@ -50,7 +70,7 @@ CREATE TABLE book_items (
 );
 
 -- Transactions table (checkouts)
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     transaction_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     book_item_id INTEGER NOT NULL REFERENCES book_items(book_item_id) ON DELETE CASCADE,
@@ -64,7 +84,7 @@ CREATE TABLE transactions (
 );
 
 -- Fines table
-CREATE TABLE fines (
+CREATE TABLE IF NOT EXISTS fines (
     fine_id SERIAL PRIMARY KEY,
     transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -76,7 +96,7 @@ CREATE TABLE fines (
 );
 
 -- Reservations table
-CREATE TABLE reservations (
+CREATE TABLE IF NOT EXISTS reservations (
     reservation_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     book_id INTEGER NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
@@ -88,18 +108,30 @@ CREATE TABLE reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for better query performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_books_isbn ON books(isbn);
-CREATE INDEX idx_books_title ON books(title);
-CREATE INDEX idx_book_items_barcode ON book_items(barcode);
-CREATE INDEX idx_book_items_status ON book_items(status);
-CREATE INDEX idx_transactions_user ON transactions(user_id);
-CREATE INDEX idx_transactions_status ON transactions(status);
-CREATE INDEX idx_fines_user ON fines(user_id);
-CREATE INDEX idx_fines_paid ON fines(paid);
-CREATE INDEX idx_reservations_user ON reservations(user_id);
-CREATE INDEX idx_reservations_status ON reservations(status);
+-- Book Requests table (for borrow requests)
+CREATE TABLE IF NOT EXISTS book_requests (
+    request_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    book_id INTEGER NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
+    book_item_id INTEGER REFERENCES book_items(book_item_id) ON DELETE SET NULL,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better query performance (idempotent)
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
+CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
+CREATE INDEX IF NOT EXISTS idx_book_items_barcode ON book_items(barcode);
+CREATE INDEX IF NOT EXISTS idx_book_items_status ON book_items(status);
+CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
+CREATE INDEX IF NOT EXISTS idx_fines_user ON fines(user_id);
+CREATE INDEX IF NOT EXISTS idx_fines_paid ON fines(paid);
+CREATE INDEX IF NOT EXISTS idx_reservations_user ON reservations(user_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+CREATE INDEX IF NOT EXISTS idx_book_requests_user ON book_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_book_requests_status ON book_requests(status);
 
 -- Insert a default librarian user (password: admin123)
 -- Insert or update default librarian user with a bcrypt-hashed password.

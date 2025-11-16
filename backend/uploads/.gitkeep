@@ -1,0 +1,3 @@
+# This directory stores user avatar uploads
+# The .gitkeep file ensures the directory is tracked by git
+# But actual avatar files are excluded via .gitignore

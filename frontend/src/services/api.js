@@ -44,12 +44,36 @@ export const usersAPI = {
   getHistory: () => api.get('/users/history'),
   getFines: () => api.get('/users/fines'),
   getDashboardStats: () => api.get('/users/dashboard-stats'),
+  updateProfile: (data) => api.put('/users/profile', data),
+  updateAvatar: (formData) => {
+    return api.post('/users/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteAvatar: () => {
+    // Send POST request with empty formData to delete avatar
+    const formData = new FormData();
+    return api.post('/users/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // Admin API
 export const adminAPI = {
   listMembers: (params) => api.get('/admin/members', { params }),
   getMember: (id) => api.get(`/admin/members/${id}`),
+};
+
+// Requests API
+export const requestsAPI = {
+  create: (data) => api.post('/requests', data),
+  listForAdmin: () => api.get('/requests'),
+  update: (id, data) => api.put(`/requests/${id}`, data),
 };
 
 // Circulation API

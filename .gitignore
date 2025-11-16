@@ -6,3 +6,4 @@ build
 .env.test.local
 .env.production.local
 npm-debug.log*
+docker-cleanup.ps1

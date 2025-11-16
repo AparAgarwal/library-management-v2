@@ -3,3 +3,8 @@ npm-debug.log
 .env
 .DS_Store
 *.log
+uploads/*
+!uploads/.gitkeep
+!uploads/avatars/
+uploads/avatars/*
+!uploads/avatars/.gitkeep

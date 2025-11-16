@@ -25,7 +25,7 @@
   margin-bottom: 2rem;
 }
 
-.stat-card{
+.stat-card {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
@@ -39,10 +39,12 @@
 .stat-card-link {
   text-decoration: none;
   color: inherit;
-  .stat-card:hover{
+
+  .stat-card:hover {
     background-color: #333;
     color: white;
-    .stat-icon{
+
+    .stat-icon {
       filter: grayscale(1) brightness(10);
     }
   }
@@ -73,7 +75,7 @@
 
 
 .stat-card.light {
-  background: linear-gradient( 135deg, #f9fafb 0%, #d3d7dc 50%, #aeb4bb 100% );
+  background: linear-gradient(135deg, #f9fafb 0%, #d3d7dc 50%, #aeb4bb 100%);
   color: #212529;
 }
 
@@ -250,6 +252,7 @@
   outline: none;
   border-color: #667eea;
 }
+
 .btn-primary {
   width: 100%;
   padding: 1rem;
@@ -262,6 +265,7 @@
   cursor: pointer;
   transition: transform 0.2s;
 }
+
 .btn-primary:hover {
   transform: translateY(-2px);
 }
@@ -300,35 +304,359 @@
   border: 1px solid #f5c6cb;
 }
 
-.table-container {
-  overflow-x: auto;
+.checkouts-section {
+  height: 630px;
 }
 
-.checkouts-table {
+.checkouts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.checkouts-header h2 {
+  margin: 0;
+}
+
+.search-filter-container {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  border-collapse: collapse;
 }
 
-.checkouts-table th {
-  background: #f5f5f5;
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  color: #999;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  padding: 0.75rem 3.5rem 0.75rem 2.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.filter-toggle-btn {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #667eea;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.filter-toggle-btn:hover {
+  background: #f0f0f0;
+  color: #4e54c8;
+}
+
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  z-index: 100;
+  min-width: 280px;
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
   color: #333;
-  border-bottom: 2px solid #e0e0e0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.checkouts-table td {
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.filter-option:hover {
+  background: #f5f5f5;
+}
+
+.filter-option input[type="radio"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: #667eea;
+}
+
+.filter-option span {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.sort-order-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.sort-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.sort-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.sort-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+.checkouts-list-container {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.checkouts-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.checkouts-list-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.checkouts-list-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.checkouts-list-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.checkouts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loading-more {
+  text-align: center;
   padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  color: #999;
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
-.checkouts-table tr:hover {
-  background: #f9f9f9;
+.checkout-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 0.8fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  align-items: center;
+  transition: all 0.2s;
 }
 
-.checkouts-table tr.overdue-row {
+.checkout-row:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.checkout-row.active {
+  border-left: 4px solid #4e54c8;
+}
+
+.checkout-row.overdue {
+  border-left: 4px solid #c92a2a;
   background: #fff5f5;
+}
+
+.checkout-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.book-col {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkout-book-cover {
+  width: 50px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.checkout-book-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.checkout-book-info strong {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.3;
+}
+
+.checkout-book-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+.checkout-book-info small {
+  font-size: 0.8rem;
+  color: #999;
+  font-family: monospace;
+}
+
+.member-col {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkout-member-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.checkout-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.checkout-member-info strong {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.checkout-member-info small {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.dates-col {
+  font-size: 0.85rem;
+}
+
+.dates-col div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dates-col strong {
+  min-width: 70px;
+  color: #666;
+  font-weight: 500;
+}
+
+.days-remaining {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.remaining-days {
+  color: #28b485;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.overdue-days {
+  color: #c92a2a;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.status-col {
+  align-items: center;
+  justify-content: center;
 }
 
 .status-badge {
@@ -355,4 +683,76 @@
   min-height: 50vh;
   font-size: 1.2rem;
   color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .checkout-row {
+    grid-template-columns: 2fr 1.2fr 1.2fr 0.8fr;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .checkout-book-cover {
+    width: 40px;
+    height: 60px;
+  }
+
+  .search-input {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .checkouts-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .checkouts-controls {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .checkout-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .book-col {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .status-col {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-section {
+    padding: 1rem;
+  }
+
+  .checkout-book-cover {
+    width: 50px;
+    height: 75px;
+  }
 }

@@ -2,10 +2,12 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm ci && \
+    npm cache clean --force
 
-RUN npm install
-
+# Copy source code (respects .dockerignore)
 COPY . .
 
 EXPOSE 3000

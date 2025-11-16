@@ -1,16 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const db = require('./config/db');
 const redis = require('./config/redis');
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const booksRoutes = require('./routes/books');
-const usersRoutes = require('./routes/users');
-const circulationRoutes = require('./routes/circulation');
-const adminRoutes = require('./routes/admin');
+const registerModules = require('./modules');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +14,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -61,12 +59,8 @@ app.get('/api', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/books', booksRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/circulation', circulationRoutes);
-app.use('/api/admin', adminRoutes);
+// Feature Modules
+registerModules(app);
 
 // 404 handler
 app.use((req, res) => {
