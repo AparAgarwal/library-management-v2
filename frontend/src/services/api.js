@@ -73,6 +73,7 @@ export const adminAPI = {
 export const requestsAPI = {
   create: (data) => api.post('/requests', data),
   listForAdmin: () => api.get('/requests'),
+  getMyRequests: () => api.get('/requests/my-requests'),
   update: (id, data) => api.put(`/requests/${id}`, data),
 };
 

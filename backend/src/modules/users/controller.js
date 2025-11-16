@@ -3,7 +3,7 @@ const db = require('../../config/db');
 exports.getMyBooks = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT t.*, b.title, b.author, b.cover_url, bi.barcode
+      `SELECT t.*, b.book_id AS book_id, b.title, b.author, b.cover_url, bi.barcode
        FROM transactions t
        JOIN book_items bi ON t.book_item_id = bi.book_item_id
        JOIN books b ON bi.book_id = b.book_id
