@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { booksAPI, requestsAPI } from '../../services/api';
+import { booksAPI, requestsAPI, usersAPI } from '../../services/api';
 import { selectUser } from '../../store/slices/authSlice';
 import { getErrorMessage } from '../../utils/helpers';
 import { GiWhiteBook } from 'react-icons/gi';
 import { FaBookmark } from 'react-icons/fa';
+import { PiCheck } from 'react-icons/pi';
 import '../Books.css';
 
 const BookCatalog = () => {
@@ -20,6 +21,8 @@ const BookCatalog = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [requestingBook, setRequestingBook] = useState(null);
   const [requestMessage, setRequestMessage] = useState({ text: '', type: '', bookId: null });
+  const [userRequests, setUserRequests] = useState([]);
+  const [userBorrowed, setUserBorrowed] = useState([]);
 
   const loadBooks = React.useCallback(async (page) => {
     setLoading(true);
@@ -36,9 +39,36 @@ const BookCatalog = () => {
     }
   }, []);
 
+  const loadUserBorrowed = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const resp = await usersAPI.getMyBooks();
+      // transactions now include book_id (added on backend)
+      setUserBorrowed(resp.data.transactions || []);
+    } catch (err) {
+      console.error('Error loading borrowed books:', err);
+    }
+  }, [user]);
+
+  const loadUserRequests = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const response = await requestsAPI.getMyRequests();
+      setUserRequests(response.data.requests);
+      // if any approved requests exist, refresh borrowed list
+      if ((response.data.requests || []).some(r => r.status === 'APPROVED')) {
+        loadUserBorrowed();
+      }
+    } catch (error) {
+      console.error('Error loading user requests:', error);
+    }
+  }, [user, loadUserBorrowed]);
+
   useEffect(() => {
     loadBooks(1);
-  }, [loadBooks]);
+    loadUserRequests();
+    loadUserBorrowed();
+  }, [loadBooks, loadUserRequests, loadUserBorrowed]);
 
   // Auto-search as user types (debounced) and provide autosuggest
   useEffect(() => {
@@ -99,6 +129,7 @@ const BookCatalog = () => {
       });
 
       setRequestMessage({ text: 'Request submitted!', type: 'success', bookId });
+      await loadUserRequests(); // Reload user requests to update the UI
       
       setTimeout(() => {
         setRequestMessage({ text: '', type: '', bookId: null });
@@ -124,13 +155,14 @@ const BookCatalog = () => {
 
       <form className="search-form" onSubmit={(e) => e.preventDefault()}>
         <div style={{ position: 'relative', width: '100%' }}>
-          <input
+            <input
             type="text"
             placeholder="Search by title, author, or ISBN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
             onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
+            onBlur={() => setShowSuggestions(false)}
             style={{width: '100%'}}
           />
 
@@ -172,13 +204,30 @@ const BookCatalog = () => {
       ) : (
         <>
           <div className="books-grid">
-            {books.map((book) => (
+              {books.map((book) => {
+              const existingRequest = userRequests.find(req => req.book_id === book.book_id && req.status === 'PENDING');
+              const approvedRequest = userRequests.find(req => req.book_id === book.book_id && req.status === 'APPROVED');
+              const isBorrowed = userBorrowed.some(t => Number(t.book_id) === Number(book.book_id));
+              
+              return (
               <Link to={`/books/${book.book_id}`} key={book.book_id} className="book-card">
                 {user && user.role === 'MEMBER' && (
                   <div className="book-card-request-btn">
                     {requestMessage.bookId === book.book_id && requestMessage.text ? (
                       <div className={`request-badge ${requestMessage.type}`}>
                         {requestMessage.type === 'success' ? '✓' : '✗'}
+                      </div>
+                    ) : isBorrowed ? (
+                      <div className="request-badge approved" title="Already borrowed">
+                        <PiCheck />
+                      </div>
+                    ) : existingRequest ? (
+                      <div className="request-badge requested" title="Request pending">
+                        <FaBookmark style={{ fontSize: '12px' }} />
+                      </div>
+                    ) : approvedRequest ? (
+                      <div className="request-badge approved" title="Request approved">
+                        ✓
                       </div>
                     ) : (
                       <button
@@ -218,7 +267,8 @@ const BookCatalog = () => {
                   </div>
                 </div>
               </Link>
-            ))}
+            );
+            })}
           </div>
 
           {pagination.totalPages > 1 && (

@@ -164,6 +164,16 @@
   color: white;
 }
 
+.request-badge.requested {
+  background: #ffc107;
+  color: white;
+}
+
+.request-badge.approved {
+  background: #17a2b8;
+  color: white;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
