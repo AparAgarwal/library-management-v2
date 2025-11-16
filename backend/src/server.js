@@ -3,12 +3,18 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Validate environment variables on startup
+const { validateEnvironment, getConfig } = require('./config/env');
+validateEnvironment();
+
 const db = require('./config/db');
 const redis = require('./config/redis');
 const registerModules = require('./modules');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const config = getConfig();
+const PORT = config.port;
 
 // Middleware
 app.use(cors());
@@ -62,16 +68,11 @@ app.get('/api', (req, res) => {
 // Feature Modules
 registerModules(app);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// 404 handler - must be after all routes
+app.use(notFoundHandler);
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
+// Global error handler - must be last
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {
