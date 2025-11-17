@@ -50,9 +50,21 @@ const calculatePagination = (total, page, limit) => {
  */
 const invalidateCachePattern = async (redis, pattern) => {
   try {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    let cursor = '0';
+    const batch = [];
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = nextCursor;
+      if (keys && keys.length) batch.push(...keys);
+    } while (cursor !== '0');
+
+    if (batch.length > 0) {
+      // ioredis 'del' can accept an array spread; chunk to avoid arg limits
+      const chunkSize = 500;
+      for (let i = 0; i < batch.length; i += chunkSize) {
+        const slice = batch.slice(i, i + chunkSize);
+        await redis.del(...slice);
+      }
     }
   } catch (error) {
     console.error(`Cache invalidation error for pattern ${pattern}:`, error);

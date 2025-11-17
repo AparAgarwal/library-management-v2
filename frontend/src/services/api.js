@@ -51,12 +51,12 @@ export const authAPI = {
 
 // Books API
 export const booksAPI = {
-  getAll: (page = 1, limit = 10) => api.get(`/books?page=${page}&limit=${limit}`),
-  getById: (id) => api.get(`/books/${id}`),
-  search: (query) => api.get(`/books/search?q=${query}`),
-  searchAutosuggest: (q) => api.get('/books/search', { params: { q, limit: 10 } }),
-  add: (data) => api.post('/books', data),
-  addItem: (data) => api.post('/books/items', data),
+  getAll: (page = 1, limit = 10, config = {}) => api.get(`/books`, { params: { page, limit }, ...config }),
+  getById: (id, config = {}) => api.get(`/books/${id}`, { ...config }),
+  search: (query, config = {}) => api.get(`/books/search`, { params: { q: query }, ...config }),
+  searchAutosuggest: (q, config = {}) => api.get('/books/search', { params: { q, limit: 10 }, ...config }),
+  add: (data, config = {}) => api.post('/books', data, { ...config }),
+  addItem: (data, config = {}) => api.post('/books/items', data, { ...config }),
 };
 
 // Users API
@@ -86,7 +86,11 @@ export const usersAPI = {
 
 // Admin API
 export const adminAPI = {
-  listMembers: (params) => api.get('/admin/members', { params }),
+  // Accepts params possibly containing an AbortController signal.
+  listMembers: (params = {}) => {
+    const { signal, ...rest } = params || {};
+    return api.get('/admin/members', { params: rest, ...(signal ? { signal } : {}) });
+  },
   getMember: (id) => api.get(`/admin/members/${id}`),
 };
 

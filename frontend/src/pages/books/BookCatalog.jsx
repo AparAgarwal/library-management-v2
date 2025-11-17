@@ -84,11 +84,11 @@ const BookCatalog = () => {
     const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const resp = await booksAPI.searchAutosuggest(q);
+        const resp = await booksAPI.searchAutosuggest(q, { signal: controller.signal });
         setSuggestions(resp.data.books || []);
         setShowSuggestions(true);
         // also update main list to show filtered results
-        const full = await booksAPI.search(q);
+        const full = await booksAPI.search(q, { signal: controller.signal });
         setBooks(full.data.books);
         setPagination({ page: 1, totalPages: 1 });
       } catch (err) {

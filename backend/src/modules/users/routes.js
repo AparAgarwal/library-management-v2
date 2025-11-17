@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const controller = require('./controller');
+const { asyncHandler } = require('../../utils/helpers');
 const { auth } = require('../../middleware/auth');
 
 const storage = multer.diskStorage({
@@ -31,11 +32,11 @@ const upload = multer({
 });
 
 router.use(auth);
-router.get('/my-books', controller.getMyBooks);
-router.get('/history', controller.getTransactionHistory);
-router.get('/fines', controller.getMyFines);
-router.get('/dashboard-stats', controller.getDashboardStats);
-router.put('/profile', controller.updateProfile);
-router.post('/avatar', upload.single('avatar'), controller.updateAvatar);
+router.get('/my-books', asyncHandler(controller.getMyBooks));
+router.get('/history', asyncHandler(controller.getTransactionHistory));
+router.get('/fines', asyncHandler(controller.getMyFines));
+router.get('/dashboard-stats', asyncHandler(controller.getDashboardStats));
+router.put('/profile', asyncHandler(controller.updateProfile));
+router.post('/avatar', upload.single('avatar'), asyncHandler(controller.updateAvatar));
 
 module.exports = router;

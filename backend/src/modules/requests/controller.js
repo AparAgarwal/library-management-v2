@@ -3,7 +3,10 @@ const { sanitizeSearchQuery } = require('../../utils/validation');
 const { 
   ERROR_MESSAGES, 
   REQUEST_STATUS,
-  MAX_REQUEST_ITEMS 
+  MAX_REQUEST_ITEMS,
+  BOOK_STATUS,
+  TRANSACTION_STATUS,
+  CHECKOUT_DURATION_DAYS
 } = require('../../config/constants');
 
 exports.createRequest = async (req, res) => {
@@ -71,7 +74,7 @@ exports.updateRequest = async (req, res) => {
     }
 
     // If approving, create a checkout transaction for the requested user (if a copy is available)
-    if (status === 'APPROVED') {
+    if (status === REQUEST_STATUS.APPROVED) {
       const client = await db.pool.connect();
       try {
         await client.query('BEGIN');
@@ -85,8 +88,8 @@ exports.updateRequest = async (req, res) => {
 
         // Find an available book item for the requested book
         const biRes = await client.query(
-          `SELECT * FROM book_items WHERE book_id = $1 AND status = 'AVAILABLE' LIMIT 1 FOR UPDATE`,
-          [requestRow.book_id]
+          `SELECT * FROM book_items WHERE book_id = $1 AND status = $2 LIMIT 1 FOR UPDATE`,
+          [requestRow.book_id, BOOK_STATUS.AVAILABLE]
         );
         if (biRes.rows.length === 0) {
           await client.query('ROLLBACK');
@@ -95,21 +98,21 @@ exports.updateRequest = async (req, res) => {
         const bookItem = biRes.rows[0];
 
         // Mark book item as checked out
-        await client.query('UPDATE book_items SET status = $1 WHERE book_item_id = $2', ['CHECKED_OUT', bookItem.book_item_id]);
+        await client.query('UPDATE book_items SET status = $1 WHERE book_item_id = $2', [BOOK_STATUS.CHECKED_OUT, bookItem.book_item_id]);
 
-        // Create transaction (due date 14 days from now)
+        // Create transaction (due date configured days from now)
         const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 14);
+        dueDate.setDate(dueDate.getDate() + CHECKOUT_DURATION_DAYS);
         const trxRes = await client.query(
           `INSERT INTO transactions (user_id, book_item_id, due_date, status)
            VALUES ($1, $2, $3, $4) RETURNING *`,
-          [requestRow.user_id, bookItem.book_item_id, dueDate, 'ACTIVE']
+          [requestRow.user_id, bookItem.book_item_id, dueDate, TRANSACTION_STATUS.ACTIVE]
         );
 
         // Update the request to attach the book_item_id and set status
         const updReq = await client.query(
           'UPDATE book_requests SET status=$1, book_item_id=$2 WHERE request_id=$3 RETURNING *',
-          ['APPROVED', bookItem.book_item_id, requestId]
+          [REQUEST_STATUS.APPROVED, bookItem.book_item_id, requestId]
         );
 
         await client.query('COMMIT');

@@ -2,13 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files and install dependencies (dev image)
 COPY package*.json ./
-RUN npm ci --only=production && \
-    npm cache clean --force
-
-# Install dev dependencies for development mode
-RUN npm install --only=development
+RUN npm install && npm cache clean --force
 
 # Copy source code (respects .dockerignore)
 COPY . .

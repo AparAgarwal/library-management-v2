@@ -133,6 +133,20 @@ CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
 CREATE INDEX IF NOT EXISTS idx_book_requests_user ON book_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_book_requests_status ON book_requests(status);
 
+-- Text search optimization
+-- Enable trigram extension for ILIKE acceleration
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Trigram indexes for case-insensitive search patterns
+-- Books title/author/isbn
+CREATE INDEX IF NOT EXISTS idx_books_title_trgm ON books USING gin (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_books_author_trgm ON books USING gin (author gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_books_isbn_trgm ON books USING gin (isbn gin_trgm_ops);
+
+-- Users email and full name search (concatenated)
+CREATE INDEX IF NOT EXISTS idx_users_email_trgm ON users USING gin (email gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_users_fullname_trgm ON users USING gin ((lower(first_name || ' ' || last_name)) gin_trgm_ops);
+
 -- Insert a default librarian user (password: admin123)
 -- Insert or update default librarian user with a bcrypt-hashed password.
 -- Password will be 'admin123' by default; hashed via crypt() using the Blowfish (bf) algorithm.

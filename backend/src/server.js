@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const morgan = require('morgan');
 require('dotenv').config();
 
 // Validate environment variables on startup
@@ -17,9 +20,30 @@ const config = getConfig();
 const PORT = config.port;
 
 // Middleware
-app.use(cors());
+// Security headers
+app.use(helmet());
+
+// Request logging (skip in test)
+if (config.env !== 'test') {
+  app.use(morgan('combined'));
+}
+
+// CORS with explicit origin
+const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Basic rate limiting (tighter on auth routes)
+const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+app.use('/api', generalLimiter);
+app.use('/api/auth', authLimiter);
 
 // Serve static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
