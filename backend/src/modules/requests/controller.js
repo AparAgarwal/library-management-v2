@@ -41,7 +41,7 @@ exports.listRequests = async (req, res) => {
     }
 
     const sql = `
-      SELECT r.*, u.email, u.first_name, u.last_name, b.title, b.author
+      SELECT r.*, u.email, u.first_name, u.last_name, b.title, b.author, b.cover_url
       FROM book_requests r
       JOIN users u ON r.user_id = u.user_id
       JOIN books b ON r.book_id = b.book_id
@@ -50,14 +50,6 @@ exports.listRequests = async (req, res) => {
       LIMIT $${params.length + 1}`;
 
     params.push(MAX_REQUEST_ITEMS);
-    if (q) { params.push(`%${q}%`); where = 'WHERE b.title ILIKE $1 OR u.email ILIKE $1'; }
-    const sql = `SELECT r.*, u.email, u.first_name, u.last_name, b.title, b.author, b.cover_url
-                 FROM book_requests r
-                 JOIN users u ON r.user_id = u.user_id
-                 JOIN books b ON r.book_id = b.book_id
-                 ${where}
-                 ORDER BY r.created_at DESC
-                 LIMIT 200`;
     const result = await db.query(sql, params);
 
     res.json({ requests: result.rows });
@@ -76,15 +68,6 @@ exports.updateRequest = async (req, res) => {
     const validStatuses = Object.values(REQUEST_STATUS);
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: ERROR_MESSAGES.INVALID_STATUS });
-    }
-
-    const result = await db.query(
-      'UPDATE book_requests SET status = $1 WHERE request_id = $2 RETURNING *',
-      [status, requestId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: ERROR_MESSAGES.REQUEST_NOT_FOUND });
     }
 
     // If approving, create a checkout transaction for the requested user (if a copy is available)
